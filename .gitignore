@@ -1,0 +1,22 @@
+# Ignorar todo en las carpetas de datos
+data/dataset/*
+!data/dataset/.gitkeep
+
+data/forged/*
+!data/forged/.gitkeep
+
+# Ignorar todo en las carpetas de resultados
+results/*
+!results/.gitkeep
+
+# Ignorar archivos compilados de Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Ignorar archivos de entorno virtual si lo tienes
+venv/
+.env
+
+# Ignorar logs
+*.log

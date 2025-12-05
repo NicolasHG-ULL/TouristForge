@@ -1,0 +1,52 @@
+{
+  "sexo": {
+      "probabilidades": {
+          "Hombre": 0.5,
+          "Mujer": 0.5
+      }
+  },
+  "nacionalidad": {
+      "probabilidades": {
+              "España": 0.15,
+              "Reino Unido": 0.40,
+              "Alemania": 0.90,
+              "Francia": 0.30,
+              "Italia": 0.1,
+              "Otros": 0.05
+        }
+  },
+  "edad": {
+      "probabilidades": {
+          "Menor de 16 años": 0.1,
+          "De 16 a 24 años": 0.2,
+          "De 25 a 30 años": 0.1,
+          "De 31 a 45 años": 0.3,
+          "De 46 a 60 años": 0.2,
+          "Mayores de 60 años": 0.1
+      }
+  },
+  "tipo_habitacion": {
+      "probabilidades": {
+              "Estándar": 0.67,
+              "Suite": 0.33
+      }
+  },
+  "uso_instalaciones": {
+      "probabilidades": {
+              "Si": 0.4,
+              "No": 0.6
+      }
+  },
+  "viaje": {
+      "probabilidades": {
+          "Negocios": 0.5,
+          "Placer": 0.5
+      }
+  },
+  "comparte_habitacion": {
+      "probabilidades": {
+          "Si": 0.5,
+          "No": 0.5
+      }
+  }
+}

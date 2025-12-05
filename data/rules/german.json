@@ -1,0 +1,22 @@
+{
+    "nacionalidad": {
+      "Alemania": 1,
+      "Reino Unido": -0.1,
+      "Francia": -0.1,
+      "España": -0.1,
+      "Italia": -0.1,
+      "Otros": 0
+    },
+    "sexo": {
+      "Mujer": -0.1,
+      "Hombre": -0.1
+    },
+    "uso_instalaciones": {
+      "Si": -0.1,
+      "No": -0.1
+    },
+    "tipo_habitacion": {
+      "Suite": -0.1,
+      "Estándar": -0.1
+    }
+  }

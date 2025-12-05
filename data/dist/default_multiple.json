@@ -1,0 +1,110 @@
+{
+    "sexo": {
+        "probabilidades": {
+            "Hombre": [0.25, 0.5, 0.8],
+            "Mujer": [0.75, 0.5, 0.2]
+        }
+    },
+    "nacionalidad": {
+        "condicion": "Estación",
+        "probabilidades": {
+            "invierno": { 
+                "España": [0.1, 0.15, 0.2],
+                "Reino Unido": [0.35, 0.3, 0.25],
+                "Alemania": [0.35, 0.3, 0.25],
+                "Francia": [0.1, 0.15, 0.15],
+                "Italia": [0.05, 0.05, 0.1],
+                "Otros": [0.05, 0.05, 0.05]
+            },
+            "primavera": {  
+                "España": [0.25, 0.3, 0.3],
+                "Reino Unido": [0.15, 0.15, 0.2],
+                "Alemania": [0.1, 0.1, 0.15],
+                "Francia": [0.1, 0.1, 0.15],
+                "Italia": [0.15, 0.2, 0.2],
+                "Otros": [0.05, 0.05, 0.05]
+            },
+            "verano": {  
+                "España": [0.25, 0.3, 0.3],
+                "Reino Unido": [0.15, 0.15, 0.2],
+                "Alemania": [0.1, 0.1, 0.15],
+                "Francia": [0.1, 0.1, 0.15],
+                "Italia": [0.15, 0.2, 0.2],
+                "Otros": [0.05, 0.05, 0.05]
+            },
+            "otoño": {  
+                "España": [0.15, 0.2, 0.2],
+                "Reino Unido": [0.25, 0.15, 0.2],
+                "Alemania": [0.3, 0.2, 0.2],
+                "Francia": [0.25, 0.1, 0.15],
+                "Italia": [0.1, 0.2, 0.15],
+                "Otros": [0.05, 0.05, 0.05]
+            }
+        }
+    },
+    "edad": {
+        "probabilidades": {
+            "Menor de 16 años": [0.05, 0.1, 0.1],
+            "De 16 a 24 años": [0.1, 0.25, 0.15],
+            "De 25 a 30 años": [0.1, 0.15, 0.35],
+            "De 31 a 45 años": [0.3, 0.35, 0.25],
+            "De 46 a 60 años": [0.25, 0.15, 0.1],
+            "Mayores de 60 años": [0.1, 0.1, 0.25]
+        }
+    },
+    "tipo_habitacion": {
+        "condicion": "nacionalidad",
+        "probabilidades": {
+            "España": {
+                "Estándar": [0.6, 0.67, 0.75],
+                "Suite": [0.4, 0.33, 0.25]
+            },
+            "Reino Unido": {
+                "Estándar": [0.2, 0.33, 0.5],
+                "Suite": [0.8, 0.67, 0.5]
+            },
+            "Alemania": {
+                "Estándar": [0.3, 0.33, 0.4],
+                "Suite": [0.7, 0.67, 0.6]
+            },
+            "Francia": {
+                "Estándar": [0.3, 0.33, 0.4],
+                "Suite": [0.7, 0.67, 0.6]
+            },
+            "Italia": {
+                "Estándar": [0.6, 0.67, 0.75],
+                "Suite": [0.4, 0.33, 0.25]
+            },
+            "Otros": {
+                "Estándar": [0.4, 0.5, 0.6],
+                "Suite": [0.6, 0.5, 0.4]
+            }
+        }
+    },
+    "uso_instalaciones": {
+        "condicion": "tipo_habitacion",
+        "probabilidades": {
+            "Suite": {
+                "Si": [0.7, 0.8, 0.9],
+                "No": [0.3, 0.2, 0.1]
+            },
+            "Estándar": {
+                "Si": [0.1, 0.2, 0.3],
+                "No": [0.9, 0.8, 0.7]
+            }
+        }
+    },
+    "viaje": {
+        "probabilidades": {
+            "Negocios": [0.35, 0.5, 0.75],
+            "Placer": [0.65, 0.5, 0.25]
+        }
+    },
+    "comparte_habitacion": {
+        "probabilidades": {
+            "Si": [0.3, 0.5, 0.6],
+            "No": [0.7, 0.5, 0.4]
+        }
+    }
+  }
+  
