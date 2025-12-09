@@ -51,7 +51,7 @@ def forge_guests(data, dist, rules):
                     # Si la condicion depende de una variable base del dataset, usamos row; si depende de otra compartida se debería
                     # haber generado ya (pero en nuestro flujo compartidas se generan ahora)
                     if cond_value is None:
-                        # last resort: try to use valores_compartidos (unlikely here)
+                        # ultimo recurso: usar valores_compartidos
                         cond_value = valores_compartidos.get(cond_key)
                     # ahora sample condicionada
                     probs_dict = info['probabilidades'][cond_value]
@@ -66,7 +66,7 @@ def forge_guests(data, dist, rules):
 
             # === GENERAR dias_estancia y dia_inicio UNA vez por habitación ===
             ultimo_dia_mes = calendar.monthrange(year, month)[1]
-            dias_estancia = np.random.randint(1, 8)  # mismo para todos los ocupantes de la habitación
+            dias_estancia = np.random.randint(1, 8)  # igual para todos los ocupantes de la habitación
             dia_inicio = np.random.randint(1, ultimo_dia_mes - dias_estancia + 2)
 
             # 3. Crear cada huésped en la habitación
@@ -87,7 +87,7 @@ def forge_guests(data, dist, rules):
                 # Añadir variables compartidas (se copian iguales para todos los ocupantes)
                 datos.update(valores_compartidos)
 
-                # Generar variables individuales (excluyendo 'ocupacion_habitacion', ya puesta)
+                # Generar variables individuales (excluyendo 'ocupacion_habitacion')
                 for key, info in individuales.items():
                     if 'condicion' in info:
                         cond_key = info['condicion']
@@ -126,7 +126,6 @@ def forge_guests(data, dist, rules):
         # Concatenar todos los huéspedes generados para esta fila
         df = pd.DataFrame(huespedes)
         chunks.append(df)
-        break  # Mantener para pruebas rápidas; quitar para procesar todo
 
     forged_df = pd.concat(chunks, ignore_index=True)
     return forged_df
