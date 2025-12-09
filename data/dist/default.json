@@ -1,109 +1,113 @@
 {
-  "sexo": {
-      "probabilidades": {
-          "Hombre": 0.5,
-          "Mujer": 0.5
-      }
-  },
-  "nacionalidad": {
-      "condicion": "Estación",
-      "probabilidades": {
-          "invierno": { 
-              "España": 0.15,
-              "Reino Unido": 0.30,
-              "Alemania": 0.30,
-              "Francia": 0.10,
-              "Italia": 0.1,
-              "Otros": 0.05
-          },
-          "primavera": {  
-              "España": 0.35,
-              "Reino Unido": 0.15,
-              "Alemania": 0.15,
-              "Francia": 0.15,
-              "Italia": 0.25,
-              "Otros": 0.05
-          },
-          "verano": {  
-            "España": 0.35,
-            "Reino Unido": 0.15,
-            "Alemania": 0.15,
-            "Francia": 0.15,
-            "Italia": 0.25,
-            "Otros": 0.05
-          },
-          "otoño": {  
-              "España": 0.15,
-              "Reino Unido": 0.25,
-              "Alemania": 0.25,
-              "Francia": 0.15,
-              "Italia": 0.15,
-              "Otros": 0.05
-          }
-      }
-  },
-  "edad": {
-      "probabilidades": {
-          "Menor de 16 años": 0.1,
-          "De 16 a 24 años": 0.2,
-          "De 25 a 30 años": 0.1,
-          "De 31 a 45 años": 0.3,
-          "De 46 a 60 años": 0.2,
-          "Mayores de 60 años": 0.1
-      }
-  },
-  "tipo_habitacion": {
-      "condicion": "nacionalidad",
-      "probabilidades": {
-          "España": {
-              "Estándar": 0.67,
-              "Suite": 0.33
-          },
-          "Reino Unido": {
-              "Estándar": 0.33,
-              "Suite": 0.67
-          },
-          "Alemania": {
-              "Estándar": 0.33,
-              "Suite": 0.67
-          },
-          "Francia": {
-              "Estándar": 0.33,
-              "Suite": 0.67
-          },
-          "Italia": {
-              "Estándar": 0.67,
-              "Suite": 0.33
-          },
-          "Otros": {
-              "Estándar": 0.5,
-              "Suite": 0.5
-          }
-      }
-  },
-  "uso_instalaciones": {
-      "condicion": "tipo_habitacion",
-      "probabilidades": {
-          "Suite": {
-              "Si": 0.8,
-              "No": 0.2
-          },
-          "Estándar": {
-              "Si": 0.2,
-              "No": 0.8
-          }
-      }
-  },
-  "viaje": {
-      "probabilidades": {
-          "Negocios": 0.5,
-          "Placer": 0.5
-      }
-  },
-  "comparte_habitacion": {
-      "probabilidades": {
-          "Si": 0.5,
-          "No": 0.5
-      }
-  }
+    "sexo": {
+        "probabilidades": {
+            "Hombre": 0.5,
+            "Mujer": 0.5
+        }
+    },
+    "nacionalidad": {
+        "compartido_por_habitacion": true,
+        "condicion": "Estación",
+        "probabilidades": {
+            "invierno": {
+                "España": 0.15,
+                "Reino Unido": 0.30,
+                "Alemania": 0.30,
+                "Francia": 0.10,
+                "Italia": 0.1,
+                "Otros": 0.05
+            },
+            "primavera": {
+                "España": 0.35,
+                "Reino Unido": 0.15,
+                "Alemania": 0.15,
+                "Francia": 0.15,
+                "Italia": 0.25,
+                "Otros": 0.05
+            },
+            "verano": {
+                "España": 0.35,
+                "Reino Unido": 0.15,
+                "Alemania": 0.15,
+                "Francia": 0.15,
+                "Italia": 0.25,
+                "Otros": 0.05
+            },
+            "otoño": {
+                "España": 0.15,
+                "Reino Unido": 0.25,
+                "Alemania": 0.25,
+                "Francia": 0.15,
+                "Italia": 0.15,
+                "Otros": 0.05
+            }
+        }
+    },
+    "edad": {
+        "probabilidades": {
+            "Menor de 16 años": 0.1,
+            "De 16 a 24 años": 0.2,
+            "De 25 a 30 años": 0.1,
+            "De 31 a 45 años": 0.3,
+            "De 46 a 60 años": 0.2,
+            "Mayores de 60 años": 0.1
+        }
+    },
+    "tipo_habitacion": {
+        "compartido_por_habitacion": true,
+        "condicion": "nacionalidad",
+        "probabilidades": {
+            "España": {
+                "Estándar": 0.67,
+                "Suite": 0.33
+            },
+            "Reino Unido": {
+                "Estándar": 0.33,
+                "Suite": 0.67
+            },
+            "Alemania": {
+                "Estándar": 0.33,
+                "Suite": 0.67
+            },
+            "Francia": {
+                "Estándar": 0.33,
+                "Suite": 0.67
+            },
+            "Italia": {
+                "Estándar": 0.67,
+                "Suite": 0.33
+            },
+            "Otros": {
+                "Estándar": 0.5,
+                "Suite": 0.5
+            }
+        }
+    },
+    "uso_instalaciones": {
+        "condicion": "tipo_habitacion",
+        "probabilidades": {
+            "Suite": {
+                "Si": 0.8,
+                "No": 0.2
+            },
+            "Estándar": {
+                "Si": 0.2,
+                "No": 0.8
+            }
+        }
+    },
+    "motivo_viaje": {
+        "probabilidades": {
+            "Negocios": 0.5,
+            "Placer": 0.5
+        }
+    },
+    "ocupacion_habitacion": {
+        "probabilidades": {
+            "1": 0.75,
+            "2": 0.175,
+            "3": 0.05,
+            "4": 0.025
+        }
+    }
 }
