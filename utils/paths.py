@@ -1,0 +1,11 @@
+DATASET_PATH = "data/dataset"
+DIST_DAILY_PATH = "data/dist/daily"
+DIST_HOURLY_PATH = "data/dist/hourly"
+RULES_PATH = "data/rules"
+FORGED_DAILY_PATH = "data/forged/daily"
+FORGED_HOURLY_PATH = "data/forged/hourly"
+RESULTS_DIR = "results"
+RESULTS_PREFIX = 'experiment_'
+
+PREFIX_DAILY = "daily_"
+PREFIX_HOURLY = "hourly_"

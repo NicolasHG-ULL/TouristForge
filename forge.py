@@ -126,6 +126,7 @@ def forge_guests(data, dist, rules):
         # Concatenar todos los huéspedes generados para esta fila
         df = pd.DataFrame(huespedes)
         chunks.append(df)
+        break  # PARA PRUEBAS RÁPIDAS, QUITAR DESPUÉS
 
     forged_df = pd.concat(chunks, ignore_index=True)
     return forged_df
