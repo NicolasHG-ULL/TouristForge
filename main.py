@@ -11,11 +11,13 @@ from utils.aux import  generate_dictionaries, normalize_df, normalize_probabilit
 from utils.correlation import calculate_correlation
 from utils.theorical_importance import calculate_theorical_importance
 
-from forge import forge_guests
+from forge_daily import forge_daily_consumption
+from forge_hourly import forge_hourly_consumption
 from modelling import train_and_evaluate_models
 
-from utils.paths import RESULTS_DIR,DATASET_PATH,DIST_DAILY_PATH,RULES_PATH,FORGED_DAILY_PATH,FORGED_HOURLY_PATH,DIST_HOURLY_PATH,PREFIX_DAILY,PREFIX_HOURLY
-from utils.io import save_daily_to_zip, save_hourly_to_zip, save_experiment_results
+from utils.paths import DATASET_PATH, FORGED_DAILY_PATH, DIST_DAILY_PATH, RULES_PATH, FORGED_HOURLY_PATH, DIST_HOURLY_PATH
+from utils.paths import PREFIX_DAILY_ZIP, PREFIX_HOURLY_ZIP, PREFIX_FORGED_CSV, PREFIX_DIST_JSON, PREFIX_RULES_JSON
+from utils.io import load_daily_zip, save_daily_to_zip, save_hourly_to_zip, save_experiment_results
 
 ONE_HOTEL = 'Costa Adeje Gran Hotel'
 CORR_THRESHOLD=0.8
@@ -44,10 +46,10 @@ def forge_and_save(args):
     norm_dist = normalize_probabilities(dist)
 
     # Forge the guest DataFrame based on the current distribution
-    forged_df = forge_guests(hotel_df, norm_dist, rules)
+    forged_df = forge_daily_consumption(hotel_df, norm_dist, rules)
     
     # Save the forged DataFrame and distribution to a ZIP file
-    save_daily_to_zip(forged_df, dist, rules, folder=FORGED_DAILY_PATH, prefix=PREFIX_DAILY)
+    save_daily_to_zip(forged_df, dist, rules, folder=FORGED_DAILY_PATH)
 
 def main(args):
 
@@ -86,29 +88,47 @@ def main(args):
             with Pool(num_procesos) as pool:
                 pool.map(forge_and_save, args_list)
 
+    ### FORGE SECTION -- hourly
+    if(args.mode == 'forge_hourly'):
+        forged_data_df, _, _ = load_daily_zip(FORGED_DAILY_PATH, args.daily_index)
+
+        with open(os.path.join(DIST_HOURLY_PATH, args.profiles), 'r') as file:
+            distributions = json.load(file)
+        
+        for key, profile in distributions.items():
+            if len(profile['probabilidades']) != 24:
+                raise ValueError(f"Hourly profile '{key}' must have 24 probabilities, got {len(profile['probabilidades'])}.")
+
+        norm_dist = normalize_probabilities(distributions)
+
+        noise = 0.05
+        forged_hourly_df = forge_hourly_consumption(forged_data_df, norm_dist, noise)
+
+        info = {
+            'forged_daily_index': os.path.join(FORGED_DAILY_PATH, f"{PREFIX_DAILY_ZIP}{args.daily_index:04d}.zip"),
+            'profiles_file': os.path.join(DIST_HOURLY_PATH, args.profiles),
+            'num_guests': len(forged_hourly_df['id_huesped'].unique()),
+            'num_rows': len(forged_hourly_df),
+            'date_generated': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            'noise': noise, 
+        }
+
+        save_hourly_to_zip(forged_hourly_df, distributions, info)
+
+
+
     ### MODELLING SECTION
 
     if(args.mode == 'modelling'):
+        
+        # Load forged daily data from ZIP using the new utility function
+        forged_data_df, forged_dist, rules = load_daily_zip(FORGED_DAILY_PATH, args.daily_index)
 
-        # Construct the zip file name and the internal csv file name
-        zip_filename = os.path.join(FORGED_DAILY_PATH, f"TouristForge_{args.index:04d}.zip")
-        csv_filename = f"forged_{args.index:04d}.csv"
-        dist_filename = f"dist_{args.index:04d}.json"
-        rules_filename = f"rules_{args.index:04d}.json"
-
+        # Load the original dataset
         data_df = pd.read_csv(os.path.join(DATASET_PATH, args.data))
 
-        # Open the zip file and read the CSV and JSON files it contains
-        with zipfile.ZipFile(zip_filename, 'r') as z:
-            with z.open(csv_filename) as f:
-                forged_data_df = pd.read_csv(f)
-            with z.open(dist_filename) as f:
-                forged_dist = json.load(f)  
-            with z.open(rules_filename) as f:
-                rules = json.load(f)
+        print(f"[INFO] Using daily forged ZIP index: {args.daily_index}")
 
-        print(f"Using file from zip: {zip_filename}, internal file: {csv_filename}")
-        
         ## Case where the forged_df has only one hotel
 
         forged_df = forged_data_df[forged_data_df['Hotel'] == ONE_HOTEL]
@@ -130,7 +150,7 @@ def main(args):
             'experiment_id': '',
             'experiment_date': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),  # Fecha y hora del experimento
             'input_data_file': os.path.join('data', args.data),
-            'forged_data_file': os.path.join('forged', f"{PREFIX_DAILY}{args.index:04d}.zip"),
+            'forged_data_file': os.path.join('forged', 'daily', f"{PREFIX_DAILY_ZIP}{args.daily_index:04d}.zip"),
             'experiment_description': "Generación y análisis de datos sintéticos de turistas.",
             'library_versions': {
                 'scikit-learn': '1.5.2',
@@ -163,12 +183,14 @@ if __name__ == "__main__":
     parser.add_argument("--rules", type=str, default="default.json", help="Specifies the name of the JSON file containing consumption rules located in the 'data/rules' folder. Defaults to 'default.csv' if not provided.")
     parser.add_argument("--profiles", type=str, default="default.json", help="Specifies the name of the JSON file containing hourly consumption profiles located in the 'data/dist/hourly' folder. Defaults to 'default.csv' if not provided.")
     parser.add_argument(
-        "--daily_index",
-        type=int,
-        default=1,
-        help="Index of the daily forged ZIP (e.g., 1 → TouristForge_0001.zip) used as input for the hourly forge."
+    "-i",
+    "--daily_index",
+    type=int,
+    default=1,
+    help="Index of the daily forged ZIP to be used as input. "
+         "For example, 1 → TouristForge_0001.zip. "
+         "Used by hourly forge and modelling modes."
     )
-    parser.add_argument("--index", type=int, default=1, help="Specifies the index of the Zip file to be used for modeling. The file should be located in the 'data/forged/daily' folder. Defaults to index 1 if not provided.")
     args = parser.parse_args()
 
     main(args)

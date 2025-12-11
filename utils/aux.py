@@ -1,4 +1,6 @@
-##### TO DO: edit function to adapt the new json format
+import numpy as np
+
+##### TODO: edit function to adapt the new json format
 def generate_dictionaries(distribution):
     # Initialize an empty list to store all the generated dictionaries
     dictionaries = []
@@ -107,30 +109,42 @@ def generate_dictionaries(distribution):
 
 def normalize_probabilities(dist):
     """
-    This function normalizes the probability distributions in the given dictionary.
-    It checks each key for the presence of a 'probabilities' field and normalizes the
-    values so that they sum to 1. If there are conditions present, it normalizes the
-    probabilities for each condition separately. It also avoids division by zero.
+    Normalize probability distributions in the given dictionary.
+    Works for daily distributions (dicts) and hourly profiles (lists of 24 values).
 
-    Parameters:
-        dist (dict): A dictionary containing probability distributions.
-
-    Returns:
-        dict: The updated dictionary with normalized probabilities.
+    - If a profile already sums to 1, it is left unchanged.
+    - If a profile does not sum to 1, a warning is printed and it is normalized.
     """
     for key in dist:
-        if 'probabilidades' in dist[key]:
-            if 'condicion' in dist[key]:  
-                for condition_key in dist[key]['probabilidades']:
-                    total = sum(dist[key]['probabilidades'][condition_key].values())
-                    # Avoid division by zero
-                    if total > 0:
-                        dist[key]['probabilidades'][condition_key] = {k: v / total for k, v in dist[key]['probabilidades'][condition_key].items()}
+        probs = dist[key].get('probabilidades', None)
+        if probs is None:
+            continue
+
+        if isinstance(probs, dict):
+            # Handle possible conditions
+            if 'condicion' in dist[key]:
+                for condition_key in probs:
+                    total = sum(probs[condition_key].values())
+                    if not np.isclose(total, 1.0):
+                        print(f"[WARNING] Profile '{key}' condition '{condition_key}' does not sum to 1 ({total}). Normalizing automatically.")
+                        if total > 0:
+                            probs[condition_key] = {k: v / total for k, v in probs[condition_key].items()}
             else:
-                total = sum(dist[key]['probabilidades'].values())
-                # Avoid division by zero
+                total = sum(probs.values())
+                if not np.isclose(total, 1.0):
+                    print(f"[WARNING] Profile '{key}' does not sum to 1 ({total}). Normalizing automatically.")
+                    if total > 0:
+                        dist[key]['probabilidades'] = {k: v / total for k, v in probs.items()}
+
+        elif isinstance(probs, list):
+            total = sum(probs)
+            if not np.isclose(total, 1.0):
+                print(f"[WARNING] Profile '{key}' does not sum to 1 ({total}). Normalizing automatically.")
                 if total > 0:
-                    dist[key]['probabilidades'] = {k: v / total for k, v in dist[key]['probabilidades'].items()}
+                    dist[key]['probabilidades'] = [v / total for v in probs]
+
+        else:
+            raise TypeError(f"Unknown type for 'probabilidades' in {key}: {type(probs)}")
     
     return dist
 

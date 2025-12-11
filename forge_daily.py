@@ -3,7 +3,7 @@ import pandas as pd
 import calendar
 from tqdm import tqdm
 
-def forge_guests(data, dist, rules):
+def forge_daily_consumption(data, dist, rules):
     hotel = data.iloc[0]['Hotel']
     chunks = []
 

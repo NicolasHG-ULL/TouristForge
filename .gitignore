@@ -2,8 +2,10 @@
 data/dataset/*
 !data/dataset/.gitkeep
 
-data/forged/*
-!data/forged/.gitkeep
+data/forged/daily/*
+data/forged/hourly/*
+!data/forged/daily/.gitkeep
+!data/forged/hourly/.gitkeep
 
 # Ignorar todo en las carpetas de resultados
 results/*

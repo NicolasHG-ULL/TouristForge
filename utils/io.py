@@ -1,10 +1,11 @@
 import os
 import json
+import pandas as pd
 import zipfile
 import joblib
 
-from utils.paths import RESULTS_DIR, RESULTS_PREFIX
-from utils.paths import FORGED_DAILY_PATH, PREFIX_DAILY
+from utils.paths import RESULTS_DIR, FORGED_DAILY_PATH, FORGED_HOURLY_PATH
+from utils.paths import RESULTS_PREFIX, PREFIX_DAILY_ZIP, PREFIX_HOURLY_ZIP, PREFIX_DIST_JSON, PREFIX_RULES_JSON, PREFIX_FORGED_CSV
 
 def get_next_index(path, prefix="", ext="", is_dir=False):
     """
@@ -50,7 +51,34 @@ def get_next_index(path, prefix="", ext="", is_dir=False):
 
     return max(numbers) + 1 if numbers else 1
 
-def save_daily_to_zip(dataframe, dist, rules, folder=FORGED_DAILY_PATH, prefix=PREFIX_DAILY):
+def load_daily_zip(folder, index):
+    """
+    Load a forged **daily** ZIP file containing CSV, distributions JSON, and rules JSON.
+
+    Args:
+        folder (str): Path to the folder where the ZIPs are stored.
+        index (int): Index of the ZIP file (used in naming).
+
+    Returns:
+        tuple: (forged_df, dist_dict, rules_dict)
+    """
+    zip_filename = os.path.join(folder, f"{PREFIX_DAILY_ZIP}{index:04d}.zip")
+    csv_filename = f"{PREFIX_FORGED_CSV}{index:04d}.csv"
+    dist_filename = f"{PREFIX_DIST_JSON}{index:04d}.json"
+    rules_filename = f"{PREFIX_RULES_JSON}{index:04d}.json"
+
+    with zipfile.ZipFile(zip_filename, 'r') as z:
+        with z.open(csv_filename) as f:
+            forged_df = pd.read_csv(f)
+        with z.open(dist_filename) as f:
+            dist_dict = json.load(f)
+        with z.open(rules_filename) as f:
+            rules_dict = json.load(f)
+
+    print(f"[INFO] Loaded ZIP: {zip_filename}, internal CSV: {csv_filename}")
+    return forged_df, dist_dict, rules_dict
+
+def save_daily_to_zip(dataframe, dist, rules, folder=FORGED_DAILY_PATH):
     """
     Save a forged daily dataset in a ZIP file along with its distributions and rules.
 
@@ -73,16 +101,16 @@ def save_daily_to_zip(dataframe, dist, rules, folder=FORGED_DAILY_PATH, prefix=P
 
     daily_index = get_next_index(
         path=FORGED_DAILY_PATH,
-        prefix=prefix,
+        prefix=PREFIX_DAILY_ZIP,
         ext=".zip",
         is_dir=False
     )
 
     # Create filenames using the specified format
-    csv_filename = os.path.join(folder, f"forged_{daily_index:04d}.csv")
-    dist_filename = os.path.join(folder,f"dist_{daily_index:04d}.json")
-    rules_filename = os.path.join(folder,f"rules_{daily_index:04d}.json")
-    zip_filename = os.path.join(folder,f"{prefix}{daily_index:04d}.zip")
+    csv_filename = os.path.join(folder, f"{PREFIX_FORGED_CSV}{daily_index:04d}.csv")
+    dist_filename = os.path.join(folder,f"{PREFIX_DIST_JSON}{daily_index:04d}.json")
+    rules_filename = os.path.join(folder,f"{PREFIX_RULES_JSON}{daily_index:04d}.json")
+    zip_filename = os.path.join(folder,f"{PREFIX_DAILY_ZIP}{daily_index:04d}.zip")
 
     # Save the DataFrame to a CSV file
     dataframe.to_csv(csv_filename, index=False)
@@ -112,8 +140,51 @@ def save_daily_to_zip(dataframe, dist, rules, folder=FORGED_DAILY_PATH, prefix=P
     print(f"[INFO] Guardado ZIP diario: {zip_filename}")
 
 
-def save_hourly_to_zip():
-    pass
+def save_hourly_to_zip(hourly_df: pd.DataFrame, distributions: dict, info: dict, folder=FORGED_HOURLY_PATH, prefix=PREFIX_HOURLY_ZIP):
+    """
+    Save the hourly forged dataset to a ZIP file along with its distributions and metadata.
+
+    Each ZIP will contain:
+        - CSV with hourly guest data.
+        - JSON with the hourly distributions used.
+        - JSON with metadata info.
+
+    Args:
+        hourly_df (pd.DataFrame): Hourly forged guest data.
+        distributions (dict): Hourly distributions used.
+        info (dict): Metadata information about the generation.
+        folder (str): Folder to save the ZIP.
+        prefix (str): Prefix for the ZIP file name (e.g., 'hourly_').
+    """
+
+    # Determine next available index for ZIP
+    hourly_index = get_next_index(path=folder, prefix=prefix, ext=".zip", is_dir=False)
+
+    # Filenames
+    csv_filename = os.path.join(folder, f"{PREFIX_FORGED_CSV}{hourly_index:04d}.csv")
+    dist_filename = os.path.join(folder, f"{PREFIX_DIST_JSON}{hourly_index:04d}.json")
+    info_filename = os.path.join(folder, f"info_{hourly_index:04d}.json")
+    zip_filename = os.path.join(folder, f"{prefix}{hourly_index:04d}.zip")
+
+    # Save individual files
+    hourly_df.to_csv(csv_filename, index=False)
+    with open(dist_filename, 'w') as f:
+        json.dump(distributions, f, indent=4)
+    with open(info_filename, 'w') as f:
+        json.dump(info, f, indent=4)
+
+    # Create ZIP
+    with zipfile.ZipFile(zip_filename, 'w') as zip_file:
+        zip_file.write(csv_filename, arcname=os.path.basename(csv_filename))
+        zip_file.write(dist_filename, arcname=os.path.basename(dist_filename))
+        zip_file.write(info_filename, arcname=os.path.basename(info_filename))
+
+    # Remove individual files after zipping
+    os.remove(csv_filename)
+    os.remove(dist_filename)
+    os.remove(info_filename)
+
+    print(f"[INFO] Saved hourly ZIP: {zip_filename}")
 
 def save_experiment_results(info, model_storage, importances_df, eliminated_vars):
     """

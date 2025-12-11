@@ -1,0 +1,27 @@
+{
+    "morning_active": {
+        "descripcion": "High consumption in morning hours, low at night",
+        "probabilidades": [
+            0.067, 0.067, 0.033, 0.033, 0.033, 0.033, 0.068, 0.068,
+            0.068, 0.068, 0.033, 0.033, 0.033, 0.033, 0.033, 0.033,
+            0.033, 0.033, 0.033, 0.033, 0.033, 0.033, 0.033, 0.033
+        ]
+    },
+    "evening_active": {
+        "descripcion": "Low in morning, peaks in evening",
+        "probabilidades": [
+            0.03, 0.03, 0.03, 0.03, 0.02, 0.02, 0.02, 0.02,
+            0.02, 0.02, 0.02, 0.02, 0.03, 0.03, 0.05, 0.05,
+            0.08, 0.09, 0.09, 0.09, 0.09, 0.05, 0.04, 0.03
+        ]
+
+    },
+    "uniform": {
+        "descripcion": "Evenly distributed consumption throughout the day",
+        "probabilidades": [
+            0.042, 0.042, 0.042, 0.042, 0.042, 0.042, 0.042, 0.042,
+            0.041, 0.041, 0.041, 0.041, 0.041, 0.041, 0.041, 0.041,
+            0.042, 0.042, 0.042, 0.042, 0.042, 0.042, 0.042, 0.042
+        ]
+    }
+}

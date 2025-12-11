@@ -7,5 +7,9 @@ FORGED_HOURLY_PATH = "data/forged/hourly"
 RESULTS_DIR = "results"
 RESULTS_PREFIX = 'experiment_'
 
-PREFIX_DAILY = "daily_"
-PREFIX_HOURLY = "hourly_"
+PREFIX_DAILY_ZIP = "daily_"
+PREFIX_HOURLY_ZIP = "hourly_"
+
+PREFIX_FORGED_CSV = "forged_"
+PREFIX_DIST_JSON = "dist_"
+PREFIX_RULES_JSON = "rules_"
