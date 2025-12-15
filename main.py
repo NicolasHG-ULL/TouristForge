@@ -7,7 +7,7 @@ from datetime import datetime
 
 from multiprocessing import Pool, cpu_count
 
-from utils.aux import  generate_dictionaries, normalize_df, normalize_probabilities, redistribute_importance
+from utils.aux import  normalize_df, normalize_probabilities, redistribute_importance
 from utils.correlation import calculate_correlation
 from utils.theorical_importance import calculate_theorical_importance
 
@@ -23,39 +23,11 @@ ONE_HOTEL = 'Costa Adeje Gran Hotel'
 CORR_THRESHOLD=0.8
 VIF_THRESHOLD=10
 
-def forge_and_save(args):
-    """
-    Generates and saves a synthetic guest dataset.
-
-    This function processes a single set of input arguments to generate
-    a forged guest DataFrame using `forge_guests` and saves it as a
-    daily ZIP file. It is designed to be used both for sequential
-    execution and as a target function for parallel execution with
-    `multiprocessing.Pool.map`.
-
-    Args:
-        args (tuple): A tuple containing (hotel_df, distribution, rules, index)
-            - hotel_df (pd.DataFrame): DataFrame filtered for a single hotel.
-            - distribution (dict): Daily distribution for this iteration.
-            - rules (dict): Consumption adjustment rules.
-            - index (int): Index used to name the output ZIP.
-    """
-    hotel_df, dist, rules = args
-    
-    # Normalize distibution probabilities
-    norm_dist = normalize_probabilities(dist)
-
-    # Forge the guest DataFrame based on the current distribution
-    forged_df = forge_daily_consumption(hotel_df, norm_dist, rules)
-    
-    # Save the forged DataFrame and distribution to a ZIP file
-    save_daily_to_zip(forged_df, dist, rules, folder=FORGED_DAILY_PATH)
-
 def main(args):
 
     ### FORGE SECTION -- DAILY
 
-    if(args.mode == 'forge' or args.mode == 'forge_parallel'):
+    if(args.mode == 'forge_daily'):
         data_df = pd.read_csv(os.path.join(DATASET_PATH, args.data))
         
         with open(os.path.join(DIST_DAILY_PATH, args.dist), 'r') as file:
@@ -65,44 +37,46 @@ def main(args):
             rules = json.load(file)
 
         ### Synthetic data
+        noise_daily = 0.05
 
         # Filter the DataFrame for a specific hotel
         hotel_df = data_df[data_df['Hotel'] == ONE_HOTEL]  # Just one hotel
 
-        if(args.mode == 'forge'):
-            args_list = [hotel_df, distributions, rules]
-            forge_and_save(args_list)
+        # Normalizar distribuciones
+        norm_dist = normalize_probabilities(distributions)
 
-        elif(args.mode == 'forge_parallel'):
+        # Forjar datos sintéticos diarios
+        forged_df = forge_daily_consumption(hotel_df, norm_dist, rules, noise_daily)
 
-            # Generate the dictionaries
-            distributions_list = generate_dictionaries(distributions)
+        info = {
+            'daily_index': os.path.join(FORGED_DAILY_PATH, f"{PREFIX_DAILY_ZIP}{args.daily_index:04d}.zip"),
+            'num_guests': len(forged_df['id_huesped'].unique()),
+            'total_stay_days': int(forged_df['Dias de estancia'].sum()),
+            'dist_file': args.dist,
+            'rules_file': args.rules,
+            'date_generated': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            'noise_daily': noise_daily,
+        }
 
-            # Prepare arguments for each iteration
-            args_list = [(hotel_df, dist, rules, index) for index, dist in enumerate(distributions_list, start=1)]
+        # Guardar resultados en ZIP
+        save_daily_to_zip(forged_df, distributions, rules, info, folder=FORGED_DAILY_PATH)
 
-            # Use all the available cores
-            num_procesos = cpu_count()
-
-            # Create a processes pool and execute
-            with Pool(num_procesos) as pool:
-                pool.map(forge_and_save, args_list)
 
     ### FORGE SECTION -- hourly
     if(args.mode == 'forge_hourly'):
         forged_data_df, _, _ = load_daily_zip(FORGED_DAILY_PATH, args.daily_index)
 
         with open(os.path.join(DIST_HOURLY_PATH, args.profiles), 'r') as file:
-            distributions = json.load(file)
+            profiles = json.load(file)
         
-        for key, profile in distributions.items():
+        for key, profile in profiles.items():
             if len(profile['probabilidades']) != 24:
                 raise ValueError(f"Hourly profile '{key}' must have 24 probabilities, got {len(profile['probabilidades'])}.")
 
-        norm_dist = normalize_probabilities(distributions)
+        norm_dist = normalize_probabilities(profiles)
 
-        noise = 0.05
-        forged_hourly_df = forge_hourly_consumption(forged_data_df, norm_dist, noise)
+        noise_daily = 0.1
+        forged_hourly_df = forge_hourly_consumption(forged_data_df, norm_dist, noise_daily)
 
         info = {
             'forged_daily_index': os.path.join(FORGED_DAILY_PATH, f"{PREFIX_DAILY_ZIP}{args.daily_index:04d}.zip"),
@@ -110,10 +84,10 @@ def main(args):
             'num_guests': len(forged_hourly_df['id_huesped'].unique()),
             'num_rows': len(forged_hourly_df),
             'date_generated': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            'noise': noise, 
+            'noise_daily': noise_daily,
         }
 
-        save_hourly_to_zip(forged_hourly_df, distributions, info)
+        save_hourly_to_zip(forged_hourly_df, profiles, info, FORGED_HOURLY_PATH)
 
 
 
@@ -174,9 +148,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '--mode',
-        choices=['forge', 'forge_parallel', 'forge_hourly', 'modelling'],
+        choices=['forge_daily', 'forge_daily_parallel', 'forge_hourly', 'modelling'],
         type=str,
-        help="Available modes: forge (daily), forge_parallel (daily, multi-core), forge_hourly (hourly consumption), modelling."
+        help="Available modes: forge (daily), forge_hourly (hourly consumption), modelling."
     )
     parser.add_argument("--data", type=str, default="default.csv", help="Specifies the name of the CSV file located in the 'data/dataset' folder. Defaults to 'default.csv' if not provided.")
     parser.add_argument("--dist", type=str, default="default.json", help="Specifies the name of the JSON file containing data daily distributions located in the 'data/dist/daily' folder. Defaults to 'default.json' if not provided.")

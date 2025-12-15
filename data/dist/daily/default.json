@@ -19,17 +19,17 @@
             },
             "primavera": {
                 "España": 0.35,
-                "Reino Unido": 0.15,
+                "Reino Unido": 0.1,
                 "Alemania": 0.15,
-                "Francia": 0.15,
+                "Francia": 0.1,
                 "Italia": 0.25,
                 "Otros": 0.05
             },
             "verano": {
                 "España": 0.35,
-                "Reino Unido": 0.15,
+                "Reino Unido": 0.1,
                 "Alemania": 0.15,
-                "Francia": 0.15,
+                "Francia": 0.1,
                 "Italia": 0.25,
                 "Otros": 0.05
             },

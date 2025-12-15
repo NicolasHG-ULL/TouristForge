@@ -3,7 +3,47 @@ import pandas as pd
 import calendar
 from tqdm import tqdm
 
-def forge_daily_consumption(data, dist, rules):
+def forge_daily_consumption(data, dist, rules, noise: float = 0.05) -> pd.DataFrame:
+    """
+    Genera un dataset sintético diario de huéspedes a partir de un dataset base,
+    aplicando distribuciones de variables y reglas de consumo.
+
+    Cada fila del dataset original se expande en varios huéspedes según:
+      - Número de huéspedes (Pax)
+      - Días de estancia
+      - Variables compartidas por habitación
+      - Variables individuales (condicionadas o no)
+
+    Además, se calcula:
+      - Consumo medio por huésped ajustado según reglas multiplicativas y ruido aleatorio
+      - Consumo total (Consumo medio × Dias de estancia)
+
+    Args:
+        data (pd.DataFrame): Dataset base de hoteles con columnas mínimas:
+                             ['Pax', 'Consumo de eletricidad por Pax', 'Mes', 'Año', 'Estación', 'Hotel']
+        dist (dict): Diccionario con las distribuciones de las variables. 
+                     Puede incluir:
+                        - Variables simples
+                        - Variables condicionadas
+                        - Variables compartidas por habitación
+                        - 'ocupacion_habitacion' (obligatoria)
+        rules (dict): Reglas de ajuste del consumo medio por huésped, en formato:
+                      {variable: {valor: ajuste}}
+        noise (float, optional): Ruido aleatorio aplicado al consumo medio por huésped.
+                                 Valor por defecto 0.05 (±5%).
+
+    Returns:
+        pd.DataFrame: Dataset diario sintético de huéspedes con columnas:
+                      ['Mes', 'Año', 'Hotel', 'Estación', 'Dias de estancia', 'Dia inicio',
+                       'id_huesped', 'id_habitacion', 'ocupacion_habitacion', variables generadas..., 
+                       'Consumo medio', 'Consumo total']
+
+    Notas:
+        - Las variables compartidas se generan una sola vez por habitación.
+        - Las variables condicionadas se evalúan usando primero valores compartidos,
+          luego la fila original si no existen valores previos.
+        - El consumo total se garantiza como Consumo medio × Dias de estancia.
+    """
     hotel = data.iloc[0]['Hotel']
     chunks = []
 
@@ -65,9 +105,8 @@ def forge_daily_consumption(data, dist, rules):
                     valores_compartidos[key] = np.random.choice(options, p=probs)
 
             # === GENERAR dias_estancia y dia_inicio UNA vez por habitación ===
-            ultimo_dia_mes = calendar.monthrange(year, month)[1]
-            dias_estancia = np.random.randint(1, 8)  # igual para todos los ocupantes de la habitación
-            dia_inicio = np.random.randint(1, ultimo_dia_mes - dias_estancia + 2)
+            dias_estancia = np.random.randint(1, min(7, pax_restante // n_ocupantes) + 1) # Generar dias_estancia de forma que no sobrepase pax_restante
+            dia_inicio = np.random.randint(1, calendar.monthrange(year, month)[1] - dias_estancia + 2)
 
             # 3. Crear cada huésped en la habitación
             id_habitacion_str = f"{id_habitacion_counter:06d}"
@@ -112,7 +151,7 @@ def forge_daily_consumption(data, dist, rules):
                 for feature, effect_dict in rules.items():
                     adjustment += effect_dict.get(datos.get(feature, ""), 0)
                 avg_consumption = consumption_per_pax * (1 + adjustment)
-                avg_consumption *= (1 + np.random.uniform(-0.025, 0.025))
+                avg_consumption *= (1 + np.random.uniform(-noise, noise))
 
                 datos['Consumo medio'] = avg_consumption
                 datos['Consumo total'] = avg_consumption * dias_estancia
@@ -120,7 +159,7 @@ def forge_daily_consumption(data, dist, rules):
                 huespedes.append(datos)
                 id_huesped_counter += 1
 
-            pax_restante -= n_ocupantes
+            pax_restante -= n_ocupantes * dias_estancia
             id_habitacion_counter += 1
 
         # Concatenar todos los huéspedes generados para esta fila
