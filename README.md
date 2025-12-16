@@ -113,7 +113,9 @@ Para ello se añade el campo:
 
 Si una habitación tiene ocupación 2, 3 o 4, estos huéspedes recibirán el mismo valor para cualquier variable donde este campo sea `true`.
 
-#### Variable obligatoria: `ocupacion_habitacion`
+> ⚠️ Nota: Las variables compartidas se generan antes que las individuales. Por ello, **una variable compartida no puede estar condicionada a una variable individual**, solo puede depender de columnas del dataset base o de otras variables compartidas que ya se hayan generado.
+
+#### 4. Variable obligatoria: `ocupacion_habitacion`
 
 Define cuántos huéspedes se asignan a una misma habitación.
 
@@ -147,8 +149,15 @@ Además:
 
 * Se añade ruido aleatorio por huésped, el valor por defecto es **±5%**, pero es modificable.
 * Los ajustes se aplican en cascada según las variables generadas.
+* Después de aplicar todas las reglas y generar los huéspedes, se normaliza el consumo total para que la suma de todos los huéspedes coincida con el consumo real del dataset original. Esto introduce un **factor de normalización** aplicado a cada `Consumo medio` y `Consumo total`.
 
-**Ejemplo:**
+**Interpretación del factor de normalización:**
+
+* Factor ≈ 1 → las reglas están balanceadas y no alteran significativamente el consumo total.
+* Factor > 1 → las reglas redujeron demasiado el consumo, se incrementa para ajustarlo.
+* Factor < 1 → las reglas aumentaron demasiado el consumo, se reduce para ajustarlo.
+
+**Ejemplo de reglas:**
 
 ```json
 {
@@ -192,10 +201,15 @@ python3 main.py --mode forge_daily --data mi_dataset.csv --dist dist.json --rule
 
 El forjado genera automáticamente en `data/forged/daily`:
 
-* `forged_XXXX.csv` – Dataset sintético resultante
-* `dist_XXXX.json` – Distribuciones utilizadas
-* `rules_XXXX.json` – Reglas aplicadas
-* `daily_XXXX.zip` – Contenedor con los tres archivos
+* `forged_XXXX.csv` – Dataset sintético resultante.
+* `dist_XXXX.json` – Distribuciones utilizadas.
+* `rules_XXXX.json` – Reglas aplicadas.
+* `daily_XXXX.zip` – Contenedor con los tres archivos anteriores.
+* `info_XXXX.json` – Información adicional de la generación, incluyendo:
+
+  * `num_guests` – Número de huéspedes generados.
+  * `noise_daily` – Ruido aplicado.
+  * `normalization_info` – Factor aplicado para ajustar el consumo total al dataset original.
 
 `XXXX` corresponde al siguiente índice disponible en la carpeta `data/forged/daily`, determinado automáticamente para evitar sobrescribir archivos existentes.
 
@@ -257,3 +271,89 @@ El forjado horario genera automáticamente en `data/forged/hourly`:
 * `info_XXXX.json` – Información adicional sobre el forjado (archivo diario de origen, número de huéspedes, fecha de generación, ruido aplicado, etc.)
 
 `XXXX` corresponde al siguiente índice disponible en la carpeta `data/forged/hourly`, determinado automáticamente para evitar sobrescribir archivos existentes.
+
+## Modelado de consumo (`modelling`)
+
+La sección de **modelling** permite entrenar y evaluar modelos de regresión sobre los datos sintéticos diarios generados con la fase de `forge_daily`. Se centra en predecir el **consumo medio de electricidad por huésped**.
+
+### Flujo de trabajo
+
+1. **Cargar los datos sintéticos diarios**
+
+   ```python
+   forged_data_df, forged_dist, rules = load_daily_zip(FORGED_DAILY_PATH, daily_index)
+   forged_df = forged_data_df[forged_data_df['Hotel'] == ONE_HOTEL]
+   ```
+
+   * `forged_df` contiene los huéspedes de un hotel específico.
+   * Se puede filtrar por hotel si el ZIP contiene varios hoteles.
+
+2. **Preparar las variables**
+
+   * Variables numéricas: `Dias de estancia`.
+   * Variables categóricas: `sexo`, `nacionalidad`, `edad`, `tipo_habitacion`, `uso_instalaciones`, `viaje`, `comparte_habitacion`.
+   * Se aplica **one-hot encoding** a todas las variables categóricas.
+   * Se eliminan valores `NaN` o infinitos, y se escalan las variables numéricas.
+
+3. **Eliminación de variables multicolineales**
+
+   * **Correlación alta:** Se eliminan variables cuya correlación absoluta supere `corr_threshold` (por defecto 0.8).
+   * **VIF alto:** Se eliminan variables con VIF (`Variance Inflation Factor`) superior a `vif_threshold` (por defecto 10).
+
+4. **Entrenamiento de modelos**
+   Se entrenan varios modelos de regresión para estimar el `Consumo medio`:
+
+   * Random Forest
+   * AdaBoost
+   * Ridge
+   * Lasso
+   * Bayesian Ridge
+   * XGBoost
+
+5. **Evaluación**
+
+   * Se calcula RMSE y MAE sobre un conjunto de prueba (80/20 split).
+   * Se extraen **importancias de características** de cada modelo:
+
+     * `feature_importances_` para RandomForest, AdaBoost, XGBoost.
+     * Valor absoluto de `coef_` para Ridge, Lasso, BayesianRidge.
+
+6. **Combinación con información teórica y correlaciones**
+
+   * Las importancias se pueden comparar con las derivadas de las reglas (`rules.json`) y distribuciones (`dist.json`) para obtener una visión teórica del efecto de cada variable.
+   * Se normalizan y combinan las importancias en un DataFrame final (`importance_combined_normalized`) que se guarda junto con los modelos entrenados.
+
+### Entradas
+
+| Argumento        | Tipo        | Descripción                                                              |
+| ---------------- | ----------- | ------------------------------------------------------------------------ |
+| `forged_df`      | `DataFrame` | Datos sintéticos diarios de huéspedes para un hotel.                     |
+| `corr_threshold` | `float`     | Umbral de correlación para eliminar variables altamente correlacionadas. |
+| `vif_threshold`  | `float`     | Umbral de VIF para eliminar variables multicolineales.                   |
+
+### Salidas
+
+| Retorno           | Tipo        | Descripción                                                      |
+| ----------------- | ----------- | ---------------------------------------------------------------- |
+| `importance_df`   | `DataFrame` | Importancia de cada variable para cada modelo.                   |
+| `eliminated_vars` | `dict`      | Variables eliminadas por alta correlación o VIF.                 |
+| `model_storage`   | `dict`      | Modelos entrenados, escaladores y métricas de error (RMSE, MAE). |
+
+### Ejemplo de uso
+
+```python
+from modelling import train_and_evaluate_models
+
+importance_df, eliminated_vars, model_storage = train_and_evaluate_models(forged_df)
+
+print(importance_df.head())
+print(eliminated_vars)
+print(model_storage['error_metrics'])
+```
+
+### Notas importantes
+
+* Las variables categóricas deben estar correctamente codificadas; el one-hot encoding se realiza dentro de la función.
+* El DataFrame `forged_df` debe contener al menos las columnas utilizadas en el forjado: `Dias de estancia`, `sexo`, `nacionalidad`, `edad`, `tipo_habitacion`, `uso_instalaciones`, `viaje`, `comparte_habitacion`, `Consumo medio`.
+* Se recomienda revisar los `eliminated_vars` para comprender qué variables se descartan y por qué.
+* Las importancias combinadas pueden ser comparadas con las reglas definidas en `rules.json` para validar la coherencia del modelo con el dataset sintético.

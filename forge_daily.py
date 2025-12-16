@@ -3,7 +3,7 @@ import pandas as pd
 import calendar
 from tqdm import tqdm
 
-def forge_daily_consumption(data, dist, rules, noise: float = 0.05) -> pd.DataFrame:
+def forge_daily_consumption(data, dist, rules, noise: float = 0.05):
     """
     Genera un dataset sintético diario de huéspedes a partir de un dataset base,
     aplicando distribuciones de variables y reglas de consumo.
@@ -45,11 +45,20 @@ def forge_daily_consumption(data, dist, rules, noise: float = 0.05) -> pd.DataFr
         - El consumo total se garantiza como Consumo medio × Dias de estancia.
     """
     hotel = data.iloc[0]['Hotel']
+    hotel_code = ''.join([w[0].upper() for w in hotel.split()])  # CAGH
     chunks = []
+
+    # --- Estadísticas de normalización ---
+    factors_sum = 0.0
+    factors_sq_sum = 0.0
+    factors_min = float("inf")
+    factors_max = float("-inf")
+    n_factors = 0
 
     for _, row in tqdm(data.iterrows(), total=data.shape[0], desc=f"{hotel}: Processing Rows"):
         pax = row['Pax']
-        consumption_per_pax = row['Consumo de eletricidad por Pax']
+        consumption_per_pax = row['Consumo Kw Electricidad / Pax']
+        consumo_total_real = row['Consumo Kw Electricidad']
         month = row['Mes']
         year = row['Año']
         season = row['Estación']
@@ -118,7 +127,7 @@ def forge_daily_consumption(data, dist, rules, noise: float = 0.05) -> pd.DataFr
                     "Estación": season,
                     "Dias de estancia": dias_estancia,
                     "Dia inicio": dia_inicio,
-                    "id_huesped": f"{id_huesped_counter:06d}",
+                    "id_huesped": f"{hotel_code}_{year:04d}{month:02d}_{id_huesped_counter:06d}",
                     "id_habitacion": id_habitacion_str,
                     "ocupacion_habitacion": n_ocupantes
                 }
@@ -164,8 +173,51 @@ def forge_daily_consumption(data, dist, rules, noise: float = 0.05) -> pd.DataFr
 
         # Concatenar todos los huéspedes generados para esta fila
         df = pd.DataFrame(huespedes)
+
+        # --- Normalización de consumo ---
+        consumo_sintetico = df['Consumo total'].sum()
+        if consumo_sintetico > 0:
+            factor = consumo_total_real / consumo_sintetico
+
+            df['Consumo total'] *= factor
+            df['Consumo medio'] *= factor
+
+            factors_sum += factor
+            factors_sq_sum += factor ** 2
+            factors_min = min(factors_min, factor)
+            factors_max = max(factors_max, factor)
+            n_factors += 1
+        else:
+            print("[WARNING] Consumo sintético total es 0. No se puede normalizar.")
+
         chunks.append(df)
         break  # PARA PRUEBAS RÁPIDAS, QUITAR DESPUÉS
 
     forged_df = pd.concat(chunks, ignore_index=True)
-    return forged_df
+
+        # --- Estadísticas finales ---
+    if n_factors > 0:
+        factor_mean = factors_sum / n_factors
+        factor_std = (factors_sq_sum / n_factors - factor_mean ** 2) ** 0.5
+
+        if factor_mean > 1.05:
+            interpretation = "Rules tend to increase consumption (positive bias)"
+        elif factor_mean < 0.95:
+            interpretation = "Rules tend to reduce consumption (negative bias)"
+        else:
+            interpretation = "Rules are globally balanced"
+
+        normalization_info = {
+            "normalization_applied": True,
+            "factor_mean": round(factor_mean, 4),
+            "factor_min": round(factors_min, 4),
+            "factor_max": round(factors_max, 4),
+            "factor_std": round(factor_std, 4),
+            "interpretation": interpretation
+        }
+    else:
+        normalization_info = {
+            "normalization_applied": False
+        }
+
+    return forged_df, normalization_info

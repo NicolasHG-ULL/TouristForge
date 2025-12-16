@@ -46,16 +46,16 @@ def main(args):
         norm_dist = normalize_probabilities(distributions)
 
         # Forjar datos sintéticos diarios
-        forged_df = forge_daily_consumption(hotel_df, norm_dist, rules, noise_daily)
+        forged_df, normalization_info = forge_daily_consumption(hotel_df, norm_dist, rules, noise_daily)
 
         info = {
             'daily_index': os.path.join(FORGED_DAILY_PATH, f"{PREFIX_DAILY_ZIP}{args.daily_index:04d}.zip"),
             'num_guests': len(forged_df['id_huesped'].unique()),
-            'total_stay_days': int(forged_df['Dias de estancia'].sum()),
             'dist_file': args.dist,
             'rules_file': args.rules,
             'date_generated': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             'noise_daily': noise_daily,
+            'normalization_info': normalization_info
         }
 
         # Guardar resultados en ZIP
