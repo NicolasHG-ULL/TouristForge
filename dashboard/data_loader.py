@@ -42,6 +42,3 @@ def load_json(file_path):
         raise FileNotFoundError(f"El archivo {file_path} no existe.") from e
     except json.JSONDecodeError as e:
         raise ValueError(f"El archivo {file_path} no contiene un JSON válido.") from e
-
-def get_db_connection(db_path: str):
-    return sqlite3.connect(db_path)

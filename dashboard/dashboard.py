@@ -1,12 +1,9 @@
 import streamlit as st
 
-from data_loader import get_results_directories, load_csv, load_json, get_db_connection
+from data_loader import get_results_directories, load_csv, load_json
 
 from views.charts import show_importance_chart, show_error_chart
 from views.tables import show_experiment_info, show_eliminated_vars, show_sources
-from views.sensors import sensors_view
-
-DB_PATH = "/home/nico/Escritorio/Trabajo/homeassistant/config/home-assistant_v2.db"
 
 # Interfaz de Streamlit
 def main():
@@ -23,7 +20,7 @@ def main():
 
     # Menú lateral para seleccionar la sección
     st.sidebar.title("Opciones")
-    selected_option = st.sidebar.radio("Selecciona una opción", ["Info", "Distribuciones y Reglas", "Error", "Variables Eliminadas", "Importancias", "Sensores"])
+    selected_option = st.sidebar.radio("Selecciona una opción", ["Info", "Distribuciones y Reglas", "Error", "Variables Eliminadas", "Importancias"])
 
     if selected_experiment:
         if selected_option == "Info":
@@ -41,9 +38,6 @@ def main():
         elif selected_option == "Importancias":
             data = load_csv(f"results/{selected_experiment}/importance/importance.csv")
             show_importance_chart(data)
-        elif selected_option == "Sensores":
-            conn = get_db_connection(DB_PATH)
-            sensors_view(conn)
     else:
         st.error("Vista no válida")
 
